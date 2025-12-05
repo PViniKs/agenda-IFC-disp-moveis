@@ -28,8 +28,9 @@
         </activity>
         
         <activity android:name=".AddContatoActivity"/>
+
         <activity android:name="com.canhub.cropper.CropImageActivity"
-            android:theme="@style/Base.Theme.Agenda_IFC" />
+            android:theme="@style/Theme.AppCompat.Light.DarkActionBar" />
     </application>
 
 </manifest>

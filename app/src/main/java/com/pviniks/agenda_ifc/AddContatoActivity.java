@@ -21,6 +21,12 @@ import com.canhub.cropper.CropImageOptions;
 import com.pviniks.agenda_ifc.controller.ContatoController;
 import com.pviniks.agenda_ifc.model.Contato;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 public class AddContatoActivity extends AppCompatActivity {
     private EditText editTextNome, editTextEmail, editTextTelefone;
     private Button btnSalvar;
@@ -36,8 +42,15 @@ public class AddContatoActivity extends AppCompatActivity {
             if (result.isSuccessful()) {
                 Uri uriContent = result.getUriContent();
                 if (uriContent != null) {
-                    caminhoFoto = uriContent.toString();
-                    imageView.setImageURI(uriContent);
+                    String caminhoDefinitivo = salvarImagemNoArmazenamentoInterno(uriContent);
+
+                    if (!caminhoDefinitivo.isEmpty()) {
+                        caminhoFoto = caminhoDefinitivo;
+
+                        imageView.setImageURI(Uri.fromFile(new File(caminhoDefinitivo)));
+                    } else {
+                        Toast.makeText(this, "Erro ao salvar a imagem localmente", Toast.LENGTH_SHORT).show();
+                    }
                 }
             } else {
                 Exception error = result.getError();
@@ -122,7 +135,10 @@ public class AddContatoActivity extends AppCompatActivity {
 
             if (contatoEdit.getFoto() != null && !contatoEdit.getFoto().isEmpty()) {
                 caminhoFoto = contatoEdit.getFoto();
-                imageView.setImageURI(Uri.parse(caminhoFoto));
+                File arquivoFoto = new File(caminhoFoto);
+                if(arquivoFoto.exists()){
+                    imageView.setImageURI(Uri.fromFile(arquivoFoto));
+                }
             }
 
             btnSalvar.setText("Atualizar Contato");
@@ -133,5 +149,37 @@ public class AddContatoActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         contatoController.close();
+    }
+
+    private String salvarImagemNoArmazenamentoInterno(Uri uri) {
+        try {
+            // Cria um nome único para o arquivo usando o tempo atual
+            String nomeArquivo = "contato_" + System.currentTimeMillis() + ".jpg";
+
+            // Define o local de destino (pasta files do app)
+            File destino = new File(getFilesDir(), nomeArquivo);
+
+            // Abre os fluxos de entrada (origem) e saída (destino)
+            InputStream inputStream = getContentResolver().openInputStream(uri);
+            OutputStream outputStream = new FileOutputStream(destino);
+
+            // Copia os dados
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = inputStream.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, length);
+            }
+
+            // Fecha tudo
+            outputStream.close();
+            inputStream.close();
+
+            // Retorna o caminho absoluto do arquivo salvo
+            return destino.getAbsolutePath();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ""; // Retorna vazio em caso de erro
+        }
     }
 }
